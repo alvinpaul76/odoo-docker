@@ -1,0 +1,50 @@
+volumes:
+  odoo_storage:
+    driver: local
+    driver_opts:
+      type: none
+      device: /storage/odoo/odoo
+      o: bind
+  odoo_extra_addons:
+    driver: local
+    driver_opts:
+      type: none
+      device: /storage/odoo/extra-addons
+      o: bind
+  postgres_storage:
+    driver: local
+    driver_opts:
+      type: none
+      device: /storage/pg_data
+      o: bind
+
+services:
+  db:
+    image: postgres:latest
+    user: root
+    environment:
+      - POSTGRES_USER=${ODOO_USER}
+      - POSTGRES_PASSWORD=${ODOO_PASSWORD}
+      - POSTGRES_DB=postgres
+    restart: always             # run as a service
+    volumes:
+        - postgres_storage:/var/lib/postgresql/data
+
+  odoo18:
+    image: odoo:18
+    user: root
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+      - "8072:8072" # live chat
+    tty: true
+    command: --
+    environment:
+      - HOST=db
+      - USER=${ODOO_USER}
+      - PASSWORD=${ODOO_PASSWORD}
+    volumes:
+      - odoo_extra_addons:/mnt/extra-addons
+      - odoo_storage:/etc/odoo
+    restart: always             # run as a service
